@@ -4,8 +4,10 @@ public class Message {
 
   private boolean moveValidity;
 
+  @SuppressWarnings("unused") // The field will be used in JSON serialization
   private int code;
 
+  @SuppressWarnings("unused") // The field will be used in JSON serialization
   private String message;
   
   /**
@@ -15,6 +17,10 @@ public class Message {
     this.moveValidity = moveValidity;
     this.code  = code;
     this.message = message;
+  }
+  
+  public boolean isValid() {
+    return moveValidity;
   }
 
 }

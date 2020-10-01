@@ -1,13 +1,9 @@
 package models.error;
 
-public class InvalidMoveException extends Exception {
+public abstract class InvalidMoveException extends Exception {
   private static final long serialVersionUID = 8953601149038132258L;
 
-  public int code() {
-    return 101;
-  }
+  public abstract int code();
 
-  public String cause() {
-    return "Invalid Move";
-  }
+  public abstract String cause();
 }

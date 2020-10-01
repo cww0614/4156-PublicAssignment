@@ -11,8 +11,8 @@ import models.Player;
 import models.error.InvalidMoveException;
 import org.eclipse.jetty.websocket.api.Session;
 
-class PlayGame {
-
+public class PlayGame {
+  
   private static final int PORT_NUMBER = 8080;
 
   private static Javalin app;
@@ -20,7 +20,7 @@ class PlayGame {
   /** Main method of the application.
    * @param args Command line arguments
    */
-  public static void main(final String[] args) {
+  public static void main(final String[] args) throws Exception {
     final Gson gson = new Gson();
     final GameBoard board = new GameBoard();
 
@@ -57,6 +57,7 @@ class PlayGame {
     app.get("/joingame", ctx -> {
       Player player1 = board.getPlayer1();
       if (player1 == null) {
+        ctx.status(412);
         ctx.result("Player 1 not joined yet");
         return;
       }
@@ -110,14 +111,10 @@ class PlayGame {
    * @param gameBoardJson Gameboard JSON
    * @throws IOException Websocket message send IO Exception
    */
-  private static void sendGameBoardToAllPlayers(final String gameBoardJson) {
+  private static void sendGameBoardToAllPlayers(final String gameBoardJson) throws IOException {
     Queue<Session> sessions = UiWebSocket.getSessions();
     for (Session sessionPlayer : sessions) {
-      try {
-        sessionPlayer.getRemote().sendString(gameBoardJson);
-      } catch (IOException e) {
-        // Add logger here
-      }
+      sessionPlayer.getRemote().sendString(gameBoardJson);
     }
   }
 

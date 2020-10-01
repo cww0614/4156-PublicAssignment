@@ -75,11 +75,23 @@ public class GameBoard {
     return this.p2;
   }
   
+  public int getWinner() {
+    return winner;
+  }
+  
+  public boolean isDraw() {
+    return isDraw;
+  }
+  
   /**
    * Start the game.
    */
   public void startGame() {
     this.gameStarted = true;
+  }
+  
+  public boolean isGameStarted() {
+    return this.gameStarted;
   }
   
   /**
@@ -94,7 +106,8 @@ public class GameBoard {
       throw new InvalidPositionException();
     }
 
-    if (turn != player.getId()) {
+    if (p1 == null || p2 == null 
+        || player == null || turn != player.getId()) {
       throw new NotYourTurnException();
     }
 
