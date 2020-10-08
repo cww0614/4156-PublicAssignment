@@ -1,8 +1,10 @@
 package controllers;
 
 import com.google.gson.Gson;
+import data.GameBoardDao;
 import io.javalin.Javalin;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Queue;
 import models.GameBoard;
 import models.Message;
@@ -17,12 +19,20 @@ public class PlayGame {
 
   private static Javalin app;
 
+  private static GameBoardDao gameBoardDao = new GameBoardDao();
+  
+  private PlayGame() {}
+
   /** Main method of the application.
    * @param args Command line arguments
    */
   public static void main(final String[] args) throws Exception {
+    gameBoardDao.connect();
+    
     final Gson gson = new Gson();
-    final GameBoard board = new GameBoard();
+
+    GameBoard maybeBoard = gameBoardDao.getGameBoard();
+    final GameBoard board = maybeBoard == null ? new GameBoard() : maybeBoard;
 
     app = Javalin.create(config -> {
       config.addStaticFiles("/public");
@@ -35,6 +45,7 @@ public class PlayGame {
 
     app.get("/newgame", ctx -> {
       board.newGame();
+      gameBoardDao.reset();
       ctx.redirect("/tictactoe.html");
     });
 
@@ -52,6 +63,7 @@ public class PlayGame {
 
       board.setPlayer1(new Player(c, 1));
       ctx.result(gson.toJson(board));
+      gameBoardDao.saveGameBoard(board);
     });
 
     app.get("/joingame", ctx -> {
@@ -75,6 +87,7 @@ public class PlayGame {
       ctx.redirect("/tictactoe.html?p=2");
 
       sendGameBoardToAllPlayers(gson.toJson(board));
+      gameBoardDao.saveGameBoard(board);
     });
     
     app.post("/move/:playerId", ctx -> {
@@ -101,6 +114,7 @@ public class PlayGame {
       }
 
       sendGameBoardToAllPlayers(gson.toJson(board));
+      gameBoardDao.saveGameBoard(board);
     });
 
     // Web sockets - DO NOT DELETE or CHANGE
@@ -118,7 +132,11 @@ public class PlayGame {
     }
   }
 
-  public static void stop() {
+  /**
+   * Close the application.
+   */
+  public static void stop() throws SQLException {
     app.stop();
+    gameBoardDao.close();
   }
 }

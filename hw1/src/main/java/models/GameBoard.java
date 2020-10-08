@@ -29,6 +29,20 @@ public class GameBoard {
   }
   
   /**
+   * Initialize a new game board object with the specified values.
+   */
+  public GameBoard(Player p1, Player p2, boolean gameStarted,
+      int turn, char[][] boardState, int winner, boolean isDraw) {
+    this.p1 = p1;
+    this.p2 = p2;
+    this.gameStarted = gameStarted;
+    this.turn = turn;
+    this.boardState = boardState;
+    this.winner = winner;
+    this.isDraw = isDraw;
+  }
+  
+  /**
    *  Reset the board to initial state.
    */
   public void newGame() {
@@ -75,10 +89,30 @@ public class GameBoard {
     return this.p2;
   }
   
+  /**
+   * Get the winner.
+   */
   public int getWinner() {
     return winner;
   }
   
+  /**
+   * Get current turn.
+   */
+  public int getTurn() {
+    return turn;
+  }
+  
+  /**
+   * Get current board state.
+   */
+  public char[][] getBoardState() {
+    return boardState;
+  }
+  
+  /**
+   * Get whether the game is a draw now.
+   */
   public boolean isDraw() {
     return isDraw;
   }
@@ -90,6 +124,9 @@ public class GameBoard {
     this.gameStarted = true;
   }
   
+  /**
+   * Determine if the game is started.
+   */
   public boolean isGameStarted() {
     return this.gameStarted;
   }

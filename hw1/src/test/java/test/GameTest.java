@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.gson.Gson;
 import controllers.PlayGame;
+import java.io.File;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import models.GameBoard;
@@ -268,11 +269,59 @@ public class GameTest {
     }
   }
 
+  private static void restart() throws Exception {
+    restart(false);
+  }
+  
+  private static void restart(boolean clean) throws Exception {
+    close();
+    
+    if (clean) {
+      new File("data.db").delete();
+    }
+    
+    init();
+    
+    // Wait until the server is up, unirest seems to retry by itself
+    Unirest.get("http://localhost:8080/").asString();
+  }
+  
+  @Test
+  public void crashTest() throws Exception {
+    // Delete the database to emulate a fresh start
+    restart(true);
+    // Need to manually start a new game here because we just deleted the database
+    startNewGame();
+    restart();
+    testStartGame('O');
+    restart();
+    testJoinGame();
+
+    restart();
+    assertEquals(true, testMove(1, 0, 0).isValid());
+    restart();
+    assertEquals(true, testMove(2, 2, 2).isValid());
+    restart();
+    assertEquals(true, testMove(1, 0, 1).isValid());
+    restart();
+    assertEquals(true, testMove(2, 1, 1).isValid());
+    restart();
+
+    BoardReceiver receiver = new BoardReceiver("ws://localhost:8080/gameboard", 1);
+    try {
+      assertEquals(true, testMove(1, 0, 2).isValid());
+      receiver.await();
+      assertEquals(1, receiver.getBoard().getWinner());
+    } finally {
+      receiver.stop();
+    }
+  }
+
   /**
    * Stop the REST server after all tests finished.
    */
   @AfterAll
-  public static void close() {
+  public static void close() throws Exception {
     PlayGame.stop();
   }
 }
