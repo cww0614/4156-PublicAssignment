@@ -17,7 +17,7 @@ public class GameBoardDao {
     close();
     conn = DriverManager.getConnection("jdbc:sqlite:data.db");
   }
-  
+
   /**
    * Close the underlying connection in this instance.
    */
@@ -27,7 +27,7 @@ public class GameBoardDao {
       conn = null;
     }
   }
-  
+
   /**
    * Reset saved state to initial state.
    */
@@ -36,12 +36,12 @@ public class GameBoardDao {
         "DROP TABLE IF EXISTS game_board;",
         "DROP TABLE IF EXISTS player;",
 
-        "CREATE TABLE player (" 
+        "CREATE TABLE player ("
             + "id INTEGER PRIMARY KEY NOT NULL,"
             + "character CHARACTEER(1)"
             + ");",
 
-        "CREATE TABLE game_board (" 
+        "CREATE TABLE game_board ("
             + "id INTEGER PRIMARY KEY NOT NULL,"
             + "p1 INTEGER,"
             + "p2 INTEGER,"
@@ -53,7 +53,7 @@ public class GameBoardDao {
             + "FOREIGN KEY (p1) REFERENCES player (id),"
             + "FOREIGN KEY (p2) REFERENCES player (id)"
             + ");"
-            
+
     };
 
     try (Statement stmt = conn.createStatement()) {
@@ -62,7 +62,7 @@ public class GameBoardDao {
       }
     }
   }
-  
+
   /**
    * Get the game board stored in the database.
    * @return the game board object, or null if nothing was stored before
@@ -77,16 +77,12 @@ public class GameBoardDao {
           return null;
         }
       }
-      
+
       try (ResultSet rs = stmt.executeQuery("SELECT p1.id, p1.character, p2.id, p2.character, "
           + "game_started, turn, board_state, winner, is_draw "
           + "FROM game_board "
           + "LEFT JOIN player AS p1 ON p1.id = game_board.p1 "
           + "LEFT JOIN player AS p2 ON p2.id = game_board.p2;")) {
-        if (!rs.next()) {
-          return null;
-        }
-        
         Player p1 = null;
         if (rs.getString(2) != null) {
           p1 = new Player(rs.getString(2).charAt(0), rs.getInt(1));
@@ -102,19 +98,19 @@ public class GameBoardDao {
         String rawBoardState = rs.getString(7);
         int winner = rs.getInt(8);
         boolean isDraw = rs.getBoolean(9);
-        
+
         char[][] boardState = new char[3][3];
         for (int i = 0; i < 3; ++i) {
           for (int j = 0; j < 3; ++j) {
             boardState[i][j] = rawBoardState.charAt(i * 3 + j);
           }
         }
-        
+
         return new GameBoard(p1, p2, started, turn, boardState, winner, isDraw);
       }
     }
   }
-  
+
   /**
    * save the game board to the database.
    */
@@ -145,7 +141,10 @@ public class GameBoardDao {
 
     try (PreparedStatement stmt = conn.prepareStatement(saveBoardSql)) {
       stmt.setInt(1, 1);
-      stmt.setInt(2, p1.getId());
+
+      if (p1 != null) {
+        stmt.setInt(2, p1.getId());
+      }
 
       if (p2 != null) {
         stmt.setInt(3, p2.getId());
@@ -155,7 +154,7 @@ public class GameBoardDao {
 
       stmt.setBoolean(4, board.isGameStarted());
       stmt.setInt(5, board.getTurn());
-      
+
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
@@ -163,12 +162,12 @@ public class GameBoardDao {
         }
       }
       stmt.setString(6, sb.toString());
-      
+
       stmt.setInt(7, board.getWinner());
       stmt.setBoolean(8, board.isDraw());
       stmt.execute();
     }
   }
-  
+
   private Connection conn;
 }

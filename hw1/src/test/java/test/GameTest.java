@@ -14,6 +14,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
@@ -21,16 +22,16 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestMethodOrder(OrderAnnotation.class)
 public class GameTest {
   private static final Gson gson = new Gson();
-  
+
   private static Message testMove(int player, int x, int y) {
     HttpResponse<String> response = Unirest
         .post("http://localhost:8080/move/" + player)
         .body("x=" + x +  "&y=" + y)
         .asString();
-    
+
     return gson.fromJson(response.getBody(), Message.class);
   }
-  
+
   private static GameBoard testStartGame(char type) {
     HttpResponse<String> response = Unirest.post("http://localhost:8080/startgame").body("type=" + type).asString();
     assertEquals(response.getStatus(), 200);
@@ -60,8 +61,9 @@ public class GameTest {
     HttpResponse<String> response = Unirest.get("http://localhost:8080/newgame").asString();
     assertEquals(response.getStatus(), 200);
   }
-  
+
   @Test
+  @Order(2)
   public void testEcho() {
     HttpResponse<String> response = Unirest.post("http://localhost:8080/echo").body("Hello").asString();
     assertEquals("Hello", response.getBody());
@@ -71,6 +73,7 @@ public class GameTest {
    * Test the startgame endpoint with character X.
    */
   @Test
+  @Order(2)
   public void startGameXTest() {
     GameBoard gameBoard = testStartGame('X');
     assertEquals(false, gameBoard.isGameStarted());
@@ -81,6 +84,7 @@ public class GameTest {
    * Test the startgame endpoint with character X.
    */
   @Test
+  @Order(2)
   public void startGameOTest() {
     GameBoard gameBoard = testStartGame('O');
     assertEquals(false, gameBoard.isGameStarted());
@@ -91,55 +95,62 @@ public class GameTest {
    * Test the startgame endpoint with character X.
    */
   @Test
+  @Order(2)
   public void startGameWithInvalidCharacterTest() {
     HttpResponse<String> response = Unirest.post("http://localhost:8080/startgame").body("type=A").asString();
     assertNotEquals(response.getStatus(), 200);
   }
-  
+
   @Test
+  @Order(2)
   public void testPlayer2Join() {
     testStartGame('O');
     HttpResponse<String> response = Unirest.get("http://localhost:8080/joingame").asString();
     assertEquals(response.getStatus(), 200);
   }
-  
+
   /**
    * Test that a player cannot make a move until both player have joined the game.
    */
   @Test
+  @Order(2)
   public void playerCannotMoveUntilBothJoined() {
     testStartGame('X');
     assertEquals(false, testMove(1, 0, 0).isValid());
   }
 
   @Test
-  public void player2CannotJoinUntilPlayer1Joined() {
+  @Order(1)
+  public void player2CannotJoinUntilPlayer1Joined() throws Exception {
+    restart(true);
     HttpResponse<String> response = Unirest.get("http://localhost:8080/joingame").asString();
     assertNotEquals(response.getStatus(), 200);
   }
 
   @Test
+  @Order(2)
   public void playerOneAlwaysMoveFirst() {
     testStartGame('X');
     testJoinGame();
-    
+
     assertEquals(false, testMove(2, 0, 0).isValid());
   }
-  
+
   @Test
   public void playerCannotMakeTwoMovesInOneTurn() {
     testStartGame('X');
     testJoinGame();
-    
+
     assertEquals(true, testMove(1, 0, 0).isValid());
     assertEquals(false, testMove(1, 0, 1).isValid());
   }
 
   @Test
+  @Order(2)
   public void cannotMoveToInvalidPosition() {
     testStartGame('X');
     testJoinGame();
-    
+
     assertEquals(false, testMove(1, -1, 0).isValid());
     assertEquals(false, testMove(1, 0, -1).isValid());
     assertEquals(false, testMove(1, 4, 0).isValid());
@@ -147,19 +158,21 @@ public class GameTest {
   }
 
   @Test
+  @Order(2)
   public void cannotMoveToOccpupiedPosition() {
     testStartGame('X');
     testJoinGame();
-    
+
     assertEquals(true, testMove(1, 0, 0).isValid());
     assertEquals(false, testMove(2, 0, 0).isValid());
   }
 
   @Test
+  @Order(2)
   public void cannotMoveWithInvalidId() {
     testStartGame('X');
     testJoinGame();
-    
+
 
     HttpResponse<String> response = Unirest
         .post("http://localhost:8080/move/3")
@@ -168,8 +181,9 @@ public class GameTest {
 
     assertNotEquals(200, response.getStatus());
   }
-  
+
   @Test
+  @Order(2)
   public void player1ShouldBeAbleToWin() throws Exception {
     testStartGame('O');
     testJoinGame();
@@ -189,6 +203,7 @@ public class GameTest {
   }
 
   @Test
+  @Order(2)
   public void player2ShouldBeAbleToWin() throws Exception {
     testStartGame('O');
     testJoinGame();
@@ -209,6 +224,7 @@ public class GameTest {
   }
 
   @Test
+  @Order(2)
   public void playerShouldBeAbleToWinDiag() throws Exception {
     testStartGame('O');
     testJoinGame();
@@ -228,6 +244,7 @@ public class GameTest {
   }
 
   @Test
+  @Order(2)
   public void playerShouldBeAbleToWinDiag2() throws Exception {
     testStartGame('O');
     testJoinGame();
@@ -247,6 +264,7 @@ public class GameTest {
   }
 
   @Test
+  @Order(2)
   public void gameCouldDraw() throws Exception {
     testStartGame('X');
     testJoinGame();
@@ -272,21 +290,22 @@ public class GameTest {
   private static void restart() throws Exception {
     restart(false);
   }
-  
+
   private static void restart(boolean clean) throws Exception {
     close();
-    
+
     if (clean) {
       new File("data.db").delete();
     }
-    
+
     init();
-    
+
     // Wait until the server is up, unirest seems to retry by itself
     Unirest.get("http://localhost:8080/").asString();
   }
-  
+
   @Test
+  @Order(2)
   public void crashTest() throws Exception {
     // Delete the database to emulate a fresh start
     restart(true);

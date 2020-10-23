@@ -14,21 +14,22 @@ import models.error.InvalidMoveException;
 import org.eclipse.jetty.websocket.api.Session;
 
 public class PlayGame {
-  
+
   private static final int PORT_NUMBER = 8080;
 
   private static Javalin app;
 
   private static GameBoardDao gameBoardDao = new GameBoardDao();
-  
-  private PlayGame() {}
+
+  private PlayGame() {
+  }
 
   /** Main method of the application.
    * @param args Command line arguments
    */
   public static void main(final String[] args) throws Exception {
     gameBoardDao.connect();
-    
+
     final Gson gson = new Gson();
 
     GameBoard maybeBoard = gameBoardDao.getGameBoard();
@@ -44,8 +45,6 @@ public class PlayGame {
     });
 
     app.get("/newgame", ctx -> {
-      board.newGame();
-      gameBoardDao.reset();
       ctx.redirect("/tictactoe.html");
     });
 
@@ -60,6 +59,9 @@ public class PlayGame {
         ctx.status(400);
         return;
       }
+
+      board.newGame();
+      gameBoardDao.reset();
 
       board.setPlayer1(new Player(c, 1));
       ctx.result(gson.toJson(board));
@@ -80,7 +82,7 @@ public class PlayGame {
       } else {
         c = 'X';
       }
-      
+
       board.setPlayer2(new Player(c, 2));
       board.startGame();
 
@@ -89,7 +91,7 @@ public class PlayGame {
       sendGameBoardToAllPlayers(gson.toJson(board));
       gameBoardDao.saveGameBoard(board);
     });
-    
+
     app.post("/move/:playerId", ctx -> {
       int playerId = Integer.parseInt(ctx.pathParam("playerId"));
       int x = Integer.parseInt(ctx.formParam("x"));
@@ -105,7 +107,7 @@ public class PlayGame {
         ctx.result("Invalid player id");
         return;
       }
-      
+
       try {
         board.move(new Move(player, x, y));
         ctx.result(gson.toJson(new Message(true, 100, "")));
